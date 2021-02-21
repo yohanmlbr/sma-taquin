@@ -5,12 +5,15 @@ import util.Constant;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Observable;
 import java.util.Random;
 
 @Data
-public class Environment {
+public class Environment extends Observable{
     private List<List<Cell>> grid;
     private List<Agent> agents;
+
+    boolean mutex = true;
 
     public Environment(){
         int gridSize= Constant.GRID_SIZE;
@@ -40,15 +43,31 @@ public class Environment {
             this.agents.add(a);
         }
     }
-
-    public Agent pickAgent(int id){
-        return agents.get(id);
+    
+    public boolean takeMutex() {
+    	synchronized (this) {
+    		if (this.mutex) {
+    			this.mutex = false;
+    			return true;
+    		}
+    		return false;
+        }
+    }
+    
+    public void releaseMutex() {
+    	synchronized (this) {
+    		this.mutex = true;
+        }
     }
 
     public void move(Agent a,Position p){
-        this.grid.get(p.getX()).get(p.getY()).setAgent(a);
-        this.grid.get(a.getPosition().getX()).get(a.getPosition().getY()).setAgent(null);
-        a.setPosition(p);
+    	synchronized (this) {
+            this.grid.get(a.getPosition().getX()).get(a.getPosition().getY()).setAgent(null);
+            this.grid.get(p.getX()).get(p.getY()).setAgent(a);
+            a.setPosition(p);
+            updateView();
+        }
+        
     }
 
     public Position getEmptyCellPosition(){
@@ -83,5 +102,27 @@ public class Environment {
             System.out.println(line);
         }
         System.out.println();
+    }
+
+	public List<List<Cell>> getGrid() {
+		return grid;
+	}
+
+	public List<Agent> getAgents() {
+		return agents;
+	}
+	
+	public Agent get(Position position) {
+		int index = Position.posToIndex(position.getX(), position.getY(), Constant.GRID_SIZE);
+		if (index >= agents.size()) {
+			return null;
+		}else {
+        return agents.get(index);
+		}
+	}
+	
+	public void updateView() {
+        notifyObservers();
+        setChanged();
     }
 }

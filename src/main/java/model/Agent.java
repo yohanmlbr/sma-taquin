@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Data
-public class Agent {
+public class Agent extends Thread {
     private Environment env;
 
     private Position position;
@@ -25,23 +27,32 @@ public class Agent {
         this.message=null;
     }
 
-    public void percept(){
-
-    }
-
     public void action(){
-        if(hasMessage()&&isOnTarget() || !isOnTarget()){
-            Direction d = chooseDirection();
-            Position newP = new Position(this.position,d);
-            Cell c=this.env.getGrid().get(newP.getX()).get(newP.getY());
-            if(!c.hasAgent()){
-                move(newP);
-                System.out.println("Agent "+this+" move to "+newP);
-            }
-            else{
-                sendMessageToAgent(c.getAgent());
-                System.out.println("Agent "+this+" send msg to "+c.getAgent());
-            }
+    	while(!env.takeMutex()) {
+    		this.sleep();
+    	}
+	        if(hasMessage()&&isOnTarget() || !isOnTarget()){
+	            Direction d = chooseDirection();
+	            Position newP = new Position(this.position,d);
+	            Cell c=this.env.getGrid().get(newP.getX()).get(newP.getY());
+	            if(!c.hasAgent()){
+	                move(newP);
+	                //System.out.println("Agent "+this+" move to "+newP);
+	            }
+	            else{
+	                sendMessageToAgent(c.getAgent());
+	                //System.out.println("Agent "+this+" send msg to "+c.getAgent());
+	            }
+	        }
+    	env.releaseMutex();
+    }
+    
+    private void sleep() {
+        try {
+        	Random rand = new Random();
+            Thread.sleep(rand.nextInt(10));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
@@ -67,7 +78,7 @@ public class Agent {
         return this.position.equals(this.target);
     }
 
-    public Direction chooseDirection(){
+    public Direction chooseDirection() throws IllegalArgumentException {
         List<Direction> directions= Arrays.asList(Direction.values());
         List<Direction> bestDirections = new ArrayList<>();
         //force to move if is on target
@@ -114,6 +125,25 @@ public class Agent {
     public int calculateEmptyCellDistanceFromNewPosition(Position p){
         return this.env.getEmptyCellPosition().getDistance(p);
     }
+    
+    @Override
+    public void run() {
+        try {
+            while(!env.isGridCompleted()) {
+            	
+                // Check I have position
+                if (this.getPosition() == null) {
+                    throw new Exception("Missing position");
+                }
+                
+                action();
+                this.env.display();
+            }
+        } catch (Exception ex) {
+            Logger.getLogger(Agent.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
 
     @Override
     public String toString(){
@@ -123,4 +153,12 @@ public class Agent {
         }
         return s+this.number;
     }
+
+	public Position getPosition() {
+		return position;
+	}
+
+	public void setPosition(Position position) {
+		this.position = position;
+	}
 }
