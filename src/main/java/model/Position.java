@@ -3,8 +3,6 @@ package model;
 import lombok.Data;
 import util.Constant;
 
-import java.util.Objects;
-
 @Data
 public class Position {
     private int x;
@@ -31,9 +29,22 @@ public class Position {
     public boolean equals(Position p){
         return this.x == p.getX() && this.y == p.getY();
     }
+    
+    public static int posToIndex(int x, int y, int size) {
+		int index = x * size + y;
+		return index;
+	}
 
     @Override
     public String toString(){
         return "("+this.x+","+this.y+")";
     }
+
+	public int getX() {
+		return x;
+	}
+
+	public int getY() {
+		return y;
+	}
 }

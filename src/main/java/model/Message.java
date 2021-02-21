@@ -11,4 +11,20 @@ public class Message {
         this.sender=s;
         this.receiver=r;
     }
+
+	public Agent getSender() {
+		return sender;
+	}
+
+	public void setSender(Agent sender) {
+		this.sender = sender;
+	}
+
+	public Agent getReceiver() {
+		return receiver;
+	}
+
+	public void setReceiver(Agent receiver) {
+		this.receiver = receiver;
+	}
 }
